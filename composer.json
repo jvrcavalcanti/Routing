@@ -1,0 +1,16 @@
+{
+    "name": "accolon/routing",
+    "description": "Library of routing",
+    "autoload": {
+        "psr-4": {
+            "Accolon\\Routing\\": "src/"
+        },
+        "files": [
+            "./src/helpers.php"
+        ]
+    },
+    "require": {
+        "react/http": "^1.1",
+        "php": "^7.4"
+    }
+}
