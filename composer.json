@@ -1,6 +1,7 @@
 {
     "name": "accolon/routing",
     "description": "Library of routing",
+    "license": "MIT",
     "autoload": {
         "psr-4": {
             "Accolon\\Routing\\": "src/"
