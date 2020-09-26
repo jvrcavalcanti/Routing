@@ -4,7 +4,7 @@ namespace Accolon\Routing;
 
 use React\Http\Message\Response;
 
-class BodyBuilder
+class ResponseBuilder
 {
     private $body;
     private int $status;
@@ -19,13 +19,15 @@ class BodyBuilder
 
     public function json($body, int $status = 200, array $headers = [])
     {
-        $this->body = json_encode($body);
-        $this->status = $status;
-        $this->headers = $headers;
-        return $this->create();
+        return $this->send(json_encode($body), $status, $headers);
     }
 
     public function text(string $body, int $status = 200, array $headers = [])
+    {
+        return $this->send($body, $status, $headers);
+    }
+
+    private function send(string $body, int $status, array $headers)
     {
         $this->body = $body;
         $this->status = $status;

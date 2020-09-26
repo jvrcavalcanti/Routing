@@ -3,10 +3,10 @@
 namespace Accolon\Routing;
 
 use Closure;
+use Psr\Http\Message\ServerRequestInterface;
 use React\EventLoop\Factory;
 use React\EventLoop\LoopInterface;
 use React\Http\Message\Response;
-use React\Http\Message\ServerRequest;
 use React\Http\Server;
 use React\Socket\Server as Socket;
 
@@ -31,7 +31,7 @@ class Router
         $this->server = new Server($this->loop, Closure::fromCallable([$this, 'handler']));
     }
 
-    private function handler(ServerRequest $request)
+    private function handler(ServerRequestInterface $request)
     {
         $stack = new \SplStack();
         $stack->setIteratorMode(
@@ -42,28 +42,8 @@ class Router
         $method = $request->getMethod();
         
         foreach ($this->routes[$method] as $route) {
-            if (preg_match($route['uri'], $uri) && $route['method'] == $method) {
-                if (is_array($route['callback']) &&
-                    is_string($route['callback'][0]) &&
-                    is_string($route['callback'][1])
-                ) {
-                    $class = new $route['callback'][0];
-
-                    if (!$class instanceof IController) {
-                        throw new \RuntimeException(
-                            $route['callback'][0] . " not an instance of " . IController::class
-                        );
-                    }
-
-                    $stack[] = fn(
-                        $request
-                    ) => Closure::fromCallable([$class, $route['callback'][1]])($request);
-                }
-
-                if (is_callable($route['callback'])) {
-                    $stack[] = fn($request) => $route['callback']($request);
-                }
-
+            if (preg_match($route->uri, $uri) && $route->method == $method) {
+                $stack[] = fn($request) => Closure::fromCallable([$route, 'run'])($request);
                 break;
             }
         }
@@ -82,11 +62,11 @@ class Router
         $start = $stack->top();
         try {
             $response = $start($request);
+            return $response instanceof Response ? $response : response()->text($response);
         } catch (\Exception $e) {
-            echo $e->getMessage . "\n";
+            echo $e->getMessage() . "\n";
             return response("Internal Server Error", 500);
         }
-        return $response instanceof Response ? $response : response($response);
     }
 
     public function getRoutes()
@@ -116,22 +96,16 @@ class Router
     private function addRoute(string $method, string $uri, $callback)
     {
         if ($uri == "/") {
-            return $this->routes[$method][] = [
-                'type' => "route",
-                'method' => $method,
-                'uri' => "/^\/$/",
-                'callback' => $callback
-            ];
+            return $this->routes[$method][] = Route::create("/^\/$/", $method, $callback);
         }
 
         $uri = str_replace("/", "\/", $uri);
 
-        return $this->routes[$method][] = [
-            'type' => "route",
-            'method' => $method,
-            'uri' => "/^" . $uri . "[\/]?$/",
-            'callback' => $callback
-        ];
+        return $this->routes[$method][] = Route::create(
+            "/^" . $uri . "[\/]?$/",
+            $method,
+            $callback
+        );
     }
 
     public function get(string $uri, $callback)

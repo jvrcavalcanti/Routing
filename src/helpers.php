@@ -1,11 +1,11 @@
 <?php
 
-use Accolon\Routing\BodyBuilder;
+use Accolon\Routing\ResponseBuilder;
 use Accolon\Routing\Router;
 
 function response($body = "", $status = 200, $headers = [])
 {
-    return new BodyBuilder($body, $status, $headers);
+    return new ResponseBuilder($body, $status, $headers);
 }
 
 function router(): Router
